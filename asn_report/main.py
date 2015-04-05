@@ -4,7 +4,7 @@ import chartkick
 
 app = Flask(__name__)
 db = SQLAlchemy(app)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///info.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///resources/asn_report.db'
 
 # Set up chartkick
 ck = Blueprint('ck_page',

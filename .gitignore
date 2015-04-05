@@ -57,4 +57,4 @@ docs/_build/
 # PyBuilder
 target/
 
-ip_to_asn.db
+*.swp

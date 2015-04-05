@@ -5,11 +5,23 @@
 </script>
 <script src="http://code.highcharts.com/highcharts.js"></script>
 <script src="ck/static/chartkick.js"></script>
+<title>
+    Traffic to other ASes
+</title>
 </head>
 
 <body>
-{% pie_chart asn_data with id='ASN Summary' height='400px' %}
+    {% pie_chart asn_data with height='500px'
+    library={
+        "title":
+            {"text": "ASN Traffic Summary",
+             "style": {
+                       "fontWeight": "bold"
+                       }
+            }
+        } 
+    %}
+
 </body>
 
 </html>
-
