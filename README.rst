@@ -41,7 +41,8 @@ To start the packet capture and begin storing data into the database::
     asn_capture [-h | --help | "tcpdump filter"]
 
 Note that if no filter is provided "ip" will be used and also a provided filter
-must be enclosed in quotes.
+must be enclosed in quotes. Capture should be started before webserver because
+it will initialize the db if it doesn't exist yet.
 
 To start the webserver to easily look at summary of the data::
 

@@ -58,3 +58,4 @@ docs/_build/
 target/
 
 *.swp
+asn_report/resources/asn_report.db
