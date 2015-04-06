@@ -220,8 +220,6 @@ def parse_packet(packet):
 def main():
 
     args = docopt(__doc__)
-    from pprint import pprint
-    pprint(args)
 
     # Check whether to packet capture or collect flows
     if args['pcap']:
