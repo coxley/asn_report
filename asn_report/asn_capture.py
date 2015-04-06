@@ -168,9 +168,6 @@ def netflow_v5_capture(host='0.0.0.0', port=2303, callback=None):
         else:
             packet.summary()
 
-def create_db():
-        db.create_all()
-
 
 def add_to_sql(asn, owner, host, parent_pfx):
     '''Add row to database with Flask-SQLAlchemy
@@ -186,6 +183,32 @@ def add_to_sql(asn, owner, host, parent_pfx):
         db.session.rollback()
         db.session.commit()
     return 0
+
+
+def lookup_org_asn(asnum):
+    '''Uses Mastermind Organization DB to perform lookup'''
+
+    def init():
+        with open('GeoIPASNum2.csv') as f:
+            maxmind_asnum_list = f.read().splitlines()
+        asn_list = set()
+        for entry in maxmind_asnum_list:
+            # Reference line:
+            # 16777216,16777471,"AS15169 Google Inc."
+            # Not all lines may have a name associated, so gotta try..expect it
+            entry_split = entry.split(',')  # Split CSV line
+            asn_and_owner = entry_split[2].strip('"')  # Strip quotes
+            try:
+                asn, owner = asn_and_owner.split(' ', 1)  # Separate AS and Org
+            except ValueError:
+                asn, owner = (asn_and_owner, 'MissingOwnerData')
+            # Update set to get rid of duplicates
+            asn_list.update([(asn, owner)])
+
+    try:
+        asn_org_mapping
+    except NameError:
+        init()
 
 
 def parse_packet(packet):
