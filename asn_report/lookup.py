@@ -103,7 +103,8 @@ class ASNLookup(object):
                                    path.dirname(asn_report.__file__),
                                    'resources/GeoIPASNum2.csv'))
         with open(org_db_path) as f:
-            raw_db = f.read()
+            # Read in as unicode to allow for non-Latin orgnames
+            raw_db = f.read().decode('utf-8')
         org_directory = {}
         for line in raw_db.splitlines():
             # Reference line:
@@ -115,7 +116,7 @@ class ASNLookup(object):
             try:
                 asn, owner = asn_and_owner.split(' ', 1)  # Sep AS and Org
             except ValueError:
-                asn, owner = (asn_and_owner, 'NoOrgAssociated')
+                asn, owner = (asn_and_owner, u'NoOrgAssociated')
             org_directory.update({asn: owner})
         return org_directory
 
