@@ -27,19 +27,13 @@ Options:
 """
 
 import sys
-import pyasn
-import asn_report
-from os import path
 from docopt import docopt
 from sqlalchemy.exc import OperationalError
 from IPy import IP
 from scapy.all import sniff
 from asn_report.main import db
 from asn_report.models import ASNCount
-
-asn_db_path = path.abspath(
-        path.join(path.dirname(asn_report.__file__), 'resources/ip_to_asn.db'))
-asn_db = pyasn.pyasn(asn_db_path)
+from asn_report.lookup import ASNLookup
 
 
 class IPHeader(object):
@@ -47,6 +41,7 @@ class IPHeader(object):
     def __init__(self, saddr, daddr):
         self.src = saddr
         self.dst = daddr
+
 
 class Packet(object):
     '''Class to very minimally imitate scapy's packet structure
@@ -67,19 +62,22 @@ class Packet(object):
         self.protocol = protocol
         ip_header = IPHeader(saddr, daddr)
         self.headers = {
-                'IP': ip_header
+            'IP': ip_header
         }
+
     def __getitem__(self, key):
         return self.headers[key]
+
     def summary(self):
         '''Print packet summary'''
         keys = {
-                'proto': self.protocol,
-                'saddr': self.saddr,
-                'daddr': self.daddr,
-                'sport': self.sport,
-                'dport': self.dport,
+            'proto': self.protocol,
+            'saddr': self.saddr,
+            'daddr': self.daddr,
+            'sport': self.sport,
+            'dport': self.dport,
         }
+
         print '{proto} {saddr}:{sport} > {daddr}:{dport}'.format(**keys)
 
 
@@ -101,9 +99,8 @@ def netflow_v5_capture(host='0.0.0.0', port=2303, callback=None):
 
     '''
 
-
-    import socket, struct
-    from socket import inet_ntoa
+    import socket
+    import struct
 
     # Verify ``host`` is a valid IP address
     try:
@@ -120,29 +117,29 @@ def netflow_v5_capture(host='0.0.0.0', port=2303, callback=None):
     while True:
         buf, addr = sock.recvfrom(1500)
 
-        (version, count) = struct.unpack('!HH',buf[0:4])
+        (version, count) = struct.unpack('!HH', buf[0:4])
         if version != 5:
             print "Not NetFlow v5!"
             continue
 
-        # It's pretty unlikely you'll ever see more then 1000 records in a 
+        # It's pretty unlikely you'll ever see more then 1000 records in a
         # 1500 byte UDP packet
         if count <= 0 or count >= 1000:
             print "Invalid count %s" % count
             continue
 
-        uptime = socket.ntohl(struct.unpack('I',buf[4:8])[0])
-        epochseconds = socket.ntohl(struct.unpack('I',buf[8:12])[0])
+        uptime = socket.ntohl(struct.unpack('I', buf[4:8])[0])
+        epochseconds = socket.ntohl(struct.unpack('I', buf[8:12])[0])
 
         for i in range(0, count):
             try:
                 base = SIZE_OF_HEADER+(i*SIZE_OF_RECORD)
 
-                data = struct.unpack('!IIIIHH',buf[base+16:base+36])
+                data = struct.unpack('!IIIIHH', buf[base+16:base+36])
 
                 nfdata = {}
-                nfdata['saddr'] = inet_ntoa(buf[base+0:base+4])
-                nfdata['daddr'] = inet_ntoa(buf[base+4:base+8])
+                nfdata['saddr'] = socket.inet_ntoa(buf[base+0:base+4])
+                nfdata['daddr'] = socket.inet_ntoa(buf[base+4:base+8])
                 nfdata['pcount'] = data[0]
                 nfdata['bcount'] = data[1]
                 nfdata['stime'] = data[2]
@@ -154,11 +151,11 @@ def netflow_v5_capture(host='0.0.0.0', port=2303, callback=None):
                 continue
 
         packet = Packet(
-                nfdata['saddr'],
-                nfdata['daddr'],
-                nfdata['sport'],
-                nfdata['dport'],
-                nfdata['protocol']
+            nfdata['saddr'],
+            nfdata['daddr'],
+            nfdata['sport'],
+            nfdata['dport'],
+            nfdata['protocol']
             )
         if callback:
             # If anything is returned, print to stdout
@@ -167,9 +164,6 @@ def netflow_v5_capture(host='0.0.0.0', port=2303, callback=None):
                 print returned
         else:
             packet.summary()
-
-def create_db():
-        db.create_all()
 
 
 def add_to_sql(asn, owner, host, parent_pfx):
@@ -199,20 +193,19 @@ def parse_packet(packet):
         print packet.summary()
         return '[WARNING]: Non-IP packet captured'
 
-    # This will verify public IP before AS lookup. Flask view won't handle
-    # None as AS currently.
+    # This will verify public IP before AS lookup.
     if IP(dst_ip).iptype() is 'PUBLIC':
-        dst_asn, dst_pfx = asn_db.lookup(dst_ip)
+        dst = ASNLookup(ipaddr=dst_ip)
+        dst_asn = dst.asnum
+        dst_pfx = dst.parent_pfx
+        dst_owner = dst.orgname
 
-        # Make sure that None doesn't get returned if db out of date
-        if dst_asn is None:
-            dst_asn = '00000'
-            owner = "IPtoASN Error"
-        else:
-            # Need to implement AS whois in a way that won't get flagged for
-            # too many requests
-            owner = 'NotImplemented'
-        args = (dst_asn, owner, dst_ip, dst_pfx)
+        # ASN should always be returned as int. If not, is error message
+        if not isinstance(dst_asn, int):
+            dst_asn = 00000
+            dst_owner = "IPtoASN Error"
+
+        args = (dst_asn, dst_owner, dst_ip, dst_pfx)
         add_to_sql(*args)
         return "AS%d owned by %s: %s child of %s" % args
 
