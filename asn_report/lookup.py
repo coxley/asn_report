@@ -1,3 +1,4 @@
+import codecs
 import pyasn
 import asn_report
 from os import path
@@ -102,9 +103,9 @@ class ASNLookup(object):
         org_db_path = path.abspath(path.join(
                                    path.dirname(asn_report.__file__),
                                    'resources/GeoIPASNum2.csv'))
-        with open(org_db_path) as f:
-            # Read in as unicode to allow for non-Latin orgnames
-            raw_db = f.read().decode('utf-8')
+        # Read in as unicode to allow for non-Latin orgnames
+        with codecs.open(org_db_path, 'r', 'iso-8859-1') as f:
+            raw_db = f.read()
         org_directory = {}
         for line in raw_db.splitlines():
             # Reference line:
