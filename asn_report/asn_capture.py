@@ -182,32 +182,6 @@ def add_to_sql(asn, owner, host, parent_pfx):
     return 0
 
 
-def lookup_org_asn(asnum):
-    '''Uses Mastermind Organization DB to perform lookup'''
-
-    def init():
-        with open('GeoIPASNum2.csv') as f:
-            maxmind_asnum_list = f.read().splitlines()
-        asn_list = set()
-        for entry in maxmind_asnum_list:
-            # Reference line:
-            # 16777216,16777471,"AS15169 Google Inc."
-            # Not all lines may have a name associated, so gotta try..expect it
-            entry_split = entry.split(',')  # Split CSV line
-            asn_and_owner = entry_split[2].strip('"')  # Strip quotes
-            try:
-                asn, owner = asn_and_owner.split(' ', 1)  # Separate AS and Org
-            except ValueError:
-                asn, owner = (asn_and_owner, 'MissingOwnerData')
-            # Update set to get rid of duplicates
-            asn_list.update([(asn, owner)])
-
-    try:
-        asn_org_mapping
-    except NameError:
-        init()
-
-
 def parse_packet(packet):
     '''Parse basic IP header info from packet and perform AS lookup'''
     global asn_db
@@ -219,8 +193,7 @@ def parse_packet(packet):
         print packet.summary()
         return '[WARNING]: Non-IP packet captured'
 
-    # This will verify public IP before AS lookup. Flask view won't handle
-    # None as AS currently.
+    # This will verify public IP before AS lookup.
     if IP(dst_ip).iptype() is 'PUBLIC':
         dst = ASNLookup(ipaddr=dst_ip)
         dst_asn = dst.asnum
@@ -235,8 +208,6 @@ def parse_packet(packet):
         args = (dst_asn, dst_owner, dst_ip, dst_pfx)
         add_to_sql(*args)
         return "AS%d owned by %s: %s child of %s" % args
-    else:
-        return "[WARNING]: AS-lookup failed for IP: %s" % dst_ip
 
 
 def main():
