@@ -73,6 +73,17 @@ To start the webserver to easily look at summary of the data::
 
 That should spawn a local webserver reachable via http://localhost:5000/
 
+For the graphing, you have the option to display each AS the following ways:
+
+1. AS[num]. This is the default way.
+
+2. AS[num]: [owner_string]. This is what I called 'display name'. To enable
+   this provide ``--display-name`` as the only argument to ``asn_report``
+
+3. [owner_string]. I assumed that the display name could get pretty long so 
+   this final option is if you just want the name to show without the AS. To
+   enable it, provide ``--owner`` as the only argument to ``asn_report``
+
 Side Notes
 ----------
 
