@@ -81,31 +81,39 @@ or ipfix collector written in Python. Netflow v5 is pretty simple and I was
 able to find a few examples already written to tweak. Who knows, maybe at some
 point I'll fill the gap.
 
-The AS lookup is performed using the pyasn library which uses a view from local
-file to map prefixes to ASN's.
+--
 
-Since it's 'only' a 12MB file, I decided to leave it watched by git in the
-repo. If you notice error where some prefixes aren't being looked up properly,
-it's probably due to this file being out of date.
+There are two offline databases that may need updating from time to time. These
+were chose to greatly speed up lookups and not to bog down other people's
+services.
 
-I've provided a script to update it for you so just get a fresh clone of the
-repo and run ``install_pyasn_db.sh``. You shouldn't have to do this, but if
-overwriting the current file makes git unwatch it run ``git add .`` otherwise
-setuptools-git won't add it to the package.
+First is the database used by the pyasn module. This is a converted version of
+a RiB snapshot taken from a looking glass. It's about 12MB and maps AS to IP
+prefixes.
+
+Second is the MaxMind Organizational CSV. This one maps AS to Org names and is
+about 12MB as well unzipped.
+
+To update these files, the easiest way is to just reinstall by grabbing the
+repo again and making sure you have git install as well as ``unzip``. Then
+before installing with pip, run the ``update-databases.sh`` script. This will
+download and convert/extract both databases and then add them to git repo so
+setuptools notices them.
+
+--
+
+The main object ``asn_report`` is a custom class ``ASNLookup`` that glues
+together a lot of these for easy back and forth.
 
 As of right now, the DB schema looks like:
 
 +------------+---------------------------------------------+
 | ASN        | AS advertising prefix                       |
 +------------+---------------------------------------------+
-| Owner      | Name of Owner (currently not implemented)   |
+| Owner      | Name of Owner                               |
 +------------+---------------------------------------------+
 | Host       | /32 host that packet was destined to        |
 +------------+---------------------------------------------+
 | Parent_pfx | Parent prefix of the host which is actually |
 |            | being advertised.                           |
 +------------+---------------------------------------------+
-
-AS owner/org_name isn't implemented yet because I didn't want to bombard any
-whois/cymru's txt record dns service for every single packet. Currently every
-packet fills that column with "NotImplemented".
