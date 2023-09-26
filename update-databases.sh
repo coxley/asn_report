@@ -10,7 +10,7 @@ pyasn_util_download.py --latest && \
     pyasn_util_convert.py --single rib.*bz2 $PYASN_PATH
 
 curl -L \
-    http://download.maxmind.com/download/geoip/database/asnum/GeoIPASNum2.zip\
+    https://download.maxmind.com/download/geoip/database/asnum/GeoIPASNum2.zip\
     > GeoIPASNum2-tmp.zip && unzip GeoIPASNum2-tmp.zip \
                                     -d $RESOURCES/
 rm GeoIPASNum2-tmp.zip
